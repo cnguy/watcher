@@ -25,6 +25,8 @@ executable zottrail-bot
                      , lens
                      , http-client
                      , wreq
+                     , dotenv
+                     , twilio
                      , discord-haskell
 
   -- hs-source-dirs:      
