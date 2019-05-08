@@ -5,6 +5,7 @@ import qualified Control.Exception as E
 import qualified Control.Monad as CM
 import Control.Lens
 import qualified Data.ByteString.Char8 as B
+import Data.List
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -19,11 +20,12 @@ setInterval seconds fn = CM.forever $ do
   fn 
   CC.threadDelay (round $ seconds * 10 ** 6)
 
-ping discord url = do
-  let channelId = 562112322185723904
-  chan <- restCall discord (GetChannel channelId)
+--- let channelId = 562112322185723904
+--- chan <- restCall discord (GetChannel channelId)
+
+ping url = do
   r <- Wreq.getWith opts url
-  putStrLn $ T.unpack $ TE.decodeUtf8 $ (r ^. Wreq.responseHeader "Date")
+  putStrLn $ url ++ ": " ++ (T.unpack $ TE.decodeUtf8 $ (r ^. Wreq.responseHeader "Date"))
   where
     -- `opts` allows us to ignore suppress exceptions and grab status codes instead.
     opts = set Wreq.checkResponse (Just $ \_ _ -> return ()) Wreq.defaults
@@ -31,7 +33,7 @@ ping discord url = do
 main :: IO ()
 main = do
   token <- T.strip <$> TIO.readFile "./auth-token.secret"
-  let url = "https://zottrail.xyz/api/v1/ok"
   discord <- loginRest (Auth token)
-  setInterval 25.0 (ping discord url)
+  let urls = ["https://zottrail.xyz/api/v1/ok", "https://zottrail.xyz/api/v1/okk"]
+  setInterval 25.0 (mapM_ ping urls)
   stopDiscord discord
