@@ -19,7 +19,6 @@ import Configuration.Dotenv (loadFile, defaultConfig)
 import Discord
 import qualified Network.Wreq as Wreq
 import Twilio
-import Twilio.Calls as Calls
 import Twilio.Messages
 
 -- | Generic, blocking loop function that runs forever.
@@ -36,14 +35,14 @@ instance ThreadSeconds Int where
 instance ThreadSeconds Double where
   loopInfinitely seconds f = loop (round $ seconds * 10 ** 6) f
 
--- | Pings some URL without throwing an exception.
-ping :: (String) -> IO ()
+-- | Pings some URL and throws if not successful (with a response code of 200).
+ping :: String -> IO ()
 ping url = do
-  r <- Wreq.getWith opts url
+  r <- Wreq.get url
   putStrLn $ url ++ ": " ++ (T.unpack $ TE.decodeUtf8 $ (r ^. Wreq.responseHeader "Date"))
-  where
-    -- `opts` allows us to ignore suppress exceptions and grab status codes instead.
-    opts = set Wreq.checkResponse (Just $ \_ _ -> return ()) Wreq.defaults
+
+pingMultiple :: [String] -> IO ()
+pingMultiple = mapM_ ping
 
 -- | Blocks the program and continually makes the Discord bot wait
 -- for a user to type "ping".
@@ -69,8 +68,8 @@ postMessageNoOpts to from message = PostMessage to from message Nothing
 
 send to from = runTwilio' (getEnv "TWILIO_ACCOUNT_SID") (getEnv "TWILIO_AUTH_TOKEN") $ do
   let warn = postMessageNoOpts to from
-  let body = warn "yabai"
-  message <- Twilio.Messages.post body
+  let twilioMessage = warn "yabai"
+  message <- post twilioMessage
   return ()
 
 getEnvAndPack :: String -> IO T.Text
@@ -93,6 +92,6 @@ main = do
   token <- T.strip <$> TIO.readFile "./auth-token.secret"
   loadFile defaultConfig
   discord <- loginRestGateway (Auth token)
-  let urls = ["https://zottrail.xyz/api/v1/ok", "https://zottrail.xyz/api/v1/okk"]
-  CC.forkIO $ (waitForDiscordPing discord)
-  E.finally (loopInfinitely (10 :: Int) (mapM_ ping urls)) (die discord)
+  let urls = ["https://zottrail.xyz/api/v1/ok"]
+  CC.forkIO $ waitForDiscordPing discord
+  E.finally (loopInfinitely (10 :: Int) (pingMultiple urls)) (die discord)
