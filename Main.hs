@@ -14,6 +14,7 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
 import qualified Network.HTTP.Client as NHC
 import System.Environment (getEnv)
+import Text.Read (readEither)
 
 import Configuration.Dotenv (loadFile, defaultConfig)
 import Discord
@@ -75,7 +76,7 @@ send to from = runTwilio' (getEnv "TWILIO_ACCOUNT_SID") (getEnv "TWILIO_AUTH_TOK
 getEnvAndPack :: String -> IO T.Text
 getEnvAndPack env = do
   value <- getEnv env
-  let text = T.pack(value)
+  let text = T.pack value
   return text
 
 -- | Calls `send` and cleans up the Discord instance.
@@ -86,6 +87,13 @@ die discord = do
   to <- getEnvAndPack "TWILIO_TO_PHONE_NUMBER"
   from <- getEnvAndPack "TWILIO_FROM_PHONE_NUMBER"
   send to from
+  channelIdEnv <- getEnv "DISCORD_CHANNEL_ID"
+  let eitherChannelId = readEither channelIdEnv :: Either String Integer
+  case eitherChannelId of
+    Left error -> putStrLn ("eitherChannelId error: " <> show error)
+    Right id -> do
+      restCall discord (CreateMessage (fromIntegral id) "something died")
+      return ()
   stopDiscord discord
 
 main = do

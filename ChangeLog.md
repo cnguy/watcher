@@ -1,4 +1,4 @@
-# Revision history for zottrail-bot
+# Revision history for watcher
 
 ## 0.1.0.0  -- YYYY-mm-dd
 
