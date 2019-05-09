@@ -31,16 +31,16 @@ class Num a => ThreadSeconds a where
   loopInfinitely :: a -> IO () -> IO ()
 
 instance ThreadSeconds Int where
-  loopInfinitely seconds f = loop (seconds * 10 ^ 6) f
+  loopInfinitely seconds = loop (seconds * 10 ^ 6)
 
 instance ThreadSeconds Double where
-  loopInfinitely seconds f = loop (round $ seconds * 10 ** 6) f
+  loopInfinitely seconds = loop (round $ seconds * 10 ** 6)
 
 -- | Pings some URL and throws if not successful (with a response code of 200).
 ping :: String -> IO ()
 ping url = do
   r <- Wreq.get url
-  putStrLn $ url ++ ": " ++ (T.unpack $ TE.decodeUtf8 $ (r ^. Wreq.responseHeader "Date"))
+  putStrLn $ url ++ ": " ++ T.unpack (TE.decodeUtf8 (r ^. Wreq.responseHeader "Date"))
 
 pingMultiple :: [String] -> IO ()
 pingMultiple = mapM_ ping
@@ -63,7 +63,7 @@ fromBot :: Message -> Bool
 fromBot m = userIsBot (messageAuthor m)
 
 isPing :: T.Text -> Bool
-isPing m = (== "ping") $ (T.map toLower m)
+isPing m = (== "ping") $ T.map toLower m
 
 postMessageNoOpts to from message = PostMessage to from message Nothing
 
