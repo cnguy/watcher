@@ -96,10 +96,14 @@ die discord = do
       return ()
   stopDiscord discord
 
+splitByComma :: T.Text -> [T.Text]
+splitByComma = T.splitOn ","
+
 main = do
   token <- T.strip <$> TIO.readFile "./auth-token.secret"
   loadFile defaultConfig
   discord <- loginRestGateway (Auth token)
-  let urls = ["https://zottrail.xyz/api/v1/ok"]
+  urls <- getEnvAndPack "OK_URLS"
+  let okUrls = map T.unpack (splitByComma urls)
   CC.forkIO $ waitForDiscordPing discord
-  E.finally (loopInfinitely (10 :: Int) (pingMultiple urls)) (die discord)
+  E.finally (loopInfinitely (10 :: Int) (pingMultiple okUrls)) (die discord)
